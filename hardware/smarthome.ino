@@ -1,20 +1,42 @@
 #include <Arduino.h>
-const int BUZZER_PIN = D1;
-
+#include <ESP8266WIFI.h>
 /////////////////////////////////////////////////////////{ var }/////////////////////////////////////////////////////////
 //این ها فرکانس های تولید صدا هستند
 const int TONE_HIGH = 1000;  // فرکانس بالا - 1000 هرتز
 const int TONE_LOW = 500;    // فرکانس پایین - 500 هرتز
 const int TONE_ALARM = 800;    // فرکانس آژیر خطر - 800 هرتز
 
+const int BUZZER_PIN = D1;
+const int MQ2_PIN = A0;      // پین آنالوگ برای سنسور MQ2
+const int GAS_THRESHOLD = 300; // آستانه تشخیص گاز
+const int RELAY_PIN = D2;    // پین دیجیتال برای کنترل رله
+
+// متغیرهای گلوبال
+int gasValue = 0;
 
 /////////////////////////////////////////////////////////{ setup_func }/////////////////////////////////////////////////////////
 
 void setup() {
     pinMode(BUZZER_PIN, OUTPUT);  // تنظیم پین buzzer به عنوان خروجی
-
+    pinMode(MQ2_PIN, INPUT);      // تنظیم پین MQ2 به عنوان ورودی
+    pinMode(RELAY_PIN, OUTPUT);    // تنظیم پین رله به عنوان خروجی
+    digitalWrite(RELAY_PIN, LOW);  // خاموش کردن رله در ابتدا
+    Serial.begin(9600);           // شروع ارتباط سریال
 }
 
+// تابع خواندن مقدار سنسور گاز
+int readGasSensor() {
+    int value = analogRead(MQ2_PIN);
+    Serial.print("Gas Value: ");
+    Serial.println(value);
+    return value;
+}
+
+// تابع بررسی وضعیت گاز
+bool isGasDetected() {
+    gasValue = readGasSensor();
+    return (gasValue > GAS_THRESHOLD);
+}
 
 // تابع تولید صدای آژیر پلیس
 void policeSiren() {
@@ -29,7 +51,6 @@ void policeSiren() {
     delay(1);
   }
 }
-
 
 // تابع تولید صدای آژیر خطر
 void dangerAlarm(boolean status) {
@@ -55,8 +76,6 @@ void dangerAlarm(boolean status) {
     delay(500);
     }
 }
-
-
 
 // jingle bells...
 // تعریف نت‌های پایه (اکتاو 4)
@@ -98,7 +117,6 @@ int getNoteFrequency(char note, char octave) {
     return baseFreq;
 }
 
-
 void playJingleBells() {
     const char* ptr = JINGLE_BELLS;
     
@@ -125,13 +143,33 @@ void playJingleBells() {
     delay(1000);  // مکث در پایان آهنگ
 }
 
+// تابع کنترل رله
+void controlRelay(bool state) {
+    digitalWrite(RELAY_PIN, state);
+    if(state) {
+        Serial.println("Relay ON");
+    } else {
+        Serial.println("Relay OFF");
+    }
+}
 
+// تابع تاخیر زمانی برای رله
+void relayTimer(unsigned long onTime) {
+    controlRelay(true);    // روشن کردن رله
+    delay(onTime);         // تاخیر به مدت زمان مشخص شده
+    controlRelay(false);   // خاموش کردن رله
+}
 
 void loop() {
-    for(int i = 0; i < 3; i++) {    // آژیر برای سه بار
-        dangerAlarm();
+    // بررسی وضعیت سنسور گاز
+    if (isGasDetected()) {
+        Serial.println("WARNING: Gas detected!");
+        controlRelay(true);  // روشن کردن رله (مثلاً برای روشن کردن تهویه)
+        dangerAlarm(true);   // فعال کردن آژیر خطر
+    } else {
+        controlRelay(false); // خاموش کردن رله
+        noTone(BUZZER_PIN);
     }
-    noTone(BUZZER_PIN);
-
-
+    
+    delay(1000);  // تاخیر یک ثانیه‌ای بین هر بررسی
 }
