@@ -7,6 +7,8 @@ const int TONE_LOW = 500;    // فرکانس پایین - 500 هرتز
 const int TONE_ALARM = 800;    // فرکانس آژیر خطر - 800 هرتز
 
 const int BUZZER_PIN = D1;
+
+
 const int MQ2_PIN = A0;      // پین آنالوگ برای سنسور MQ2
 const int GAS_THRESHOLD = 300; // آستانه تشخیص گاز
 const int RELAY_PIN = D2;    // پین دیجیتال برای کنترل رله
@@ -24,6 +26,9 @@ void setup() {
     Serial.begin(9600);           // شروع ارتباط سریال
 }
 
+
+/////////////////////////////////////////////////////////{ gas_func }/////////////////////////////////////////////////////////
+
 // تابع خواندن مقدار سنسور گاز
 int readGasSensor() {
     int value = analogRead(MQ2_PIN);
@@ -32,12 +37,17 @@ int readGasSensor() {
     return value;
 }
 
+
 // تابع بررسی وضعیت گاز
 bool isGasDetected() {
     gasValue = readGasSensor();
     return (gasValue > GAS_THRESHOLD);
 }
 
+
+
+
+/////////////////////////////////////////////////////////{ sounds_func }/////////////////////////////////////////////////////////
 // تابع تولید صدای آژیر پلیس
 void policeSiren() {
   // صدای بالا
@@ -51,6 +61,7 @@ void policeSiren() {
     delay(1);
   }
 }
+
 
 // تابع تولید صدای آژیر خطر
 void dangerAlarm(boolean status) {
@@ -76,6 +87,9 @@ void dangerAlarm(boolean status) {
     delay(500);
     }
 }
+
+
+/////////////////////////////////////////////////////////{ music_func }/////////////////////////////////////////////////////////
 
 // jingle bells...
 // تعریف نت‌های پایه (اکتاو 4)
@@ -117,6 +131,7 @@ int getNoteFrequency(char note, char octave) {
     return baseFreq;
 }
 
+
 void playJingleBells() {
     const char* ptr = JINGLE_BELLS;
     
@@ -143,6 +158,17 @@ void playJingleBells() {
     delay(1000);  // مکث در پایان آهنگ
 }
 
+
+/////////////////////////////////////////////////////////{ relay_func }/////////////////////////////////////////////////////////
+
+// تابع تاخیر زمانی برای رله
+void relayTimer(unsigned long onTime) {
+    controlRelay(true);    // روشن کردن رله
+    delay(onTime);         // تاخیر به مدت زمان مشخص شده
+    controlRelay(false);   // خاموش کردن رله
+}
+
+
 // تابع کنترل رله
 void controlRelay(bool state) {
     digitalWrite(RELAY_PIN, state);
@@ -153,12 +179,6 @@ void controlRelay(bool state) {
     }
 }
 
-// تابع تاخیر زمانی برای رله
-void relayTimer(unsigned long onTime) {
-    controlRelay(true);    // روشن کردن رله
-    delay(onTime);         // تاخیر به مدت زمان مشخص شده
-    controlRelay(false);   // خاموش کردن رله
-}
 
 void loop() {
     // بررسی وضعیت سنسور گاز
